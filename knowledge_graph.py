@@ -1,4 +1,6 @@
 import json, sys, string, urllib, urllib2, re, collections
+from copy import deepcopy
+from sys import stdout
 
 #Freebase API key = AIzaSyCnxmwlxKWsLnzs9d98rcwDhh68kuwHVXs
 #Example usage: https://www.googleapis.com/freebase/v1/search?query=bob&key=AIzaSyCnxmwlxKWsLnzs9d98rcwDhh68kuwHVXs
@@ -33,19 +35,24 @@ def query_freebase_search(query, key):
     global validEntries
     entries = []
     validEntries = []
+    topicResult = dict()
     for obj in content["result"]:
-        if (query_freebase_topic(key, obj["mid"])):   # will stop at the top-level mid containing valid entry
-            break     
-    print validEntries
+        topicResult = query_freebase_topic(key, obj["mid"])
+        if (topicResult):
+        #if (query_freebase_topic(key, obj["mid"])):   # will stop at the top-level mid containing valid entry
+            break    
+    #print validEntries
+    output_infobox(topicResult, validEntries)
 
 def query_freebase_topic(key, mid):
     url = 'https://www.googleapis.com/freebase/v1/topic'
     params = {
         'key': key,
-        'filter': 'suggest'
+       # 'filter': 'suggest'
     }
     url += mid + '?' + urllib.urlencode(params)
     topic = json.loads(urllib.urlopen(url).read())
+    #print urllib.urlopen(url).read()
     for entry in topic["property"]["/type/object/type"]["values"]:
         entries.append(str(entry["id"]))
     validEntities = {"/people/person","/book/author","/film/actor","/tv/tv_actor","/organization/organization_founder","/business/board_member","/sports/sports_league","/sports/sports_team","/sports/professional_sports_team"}
@@ -53,10 +60,69 @@ def query_freebase_topic(key, mid):
         for e in entries:
             if e in validEntities:
                 validEntries.append(e)
-        return True
+        return topic
     else:
         del entries[:]
-        return False  
+        return {}
+
+def output_infobox (topicResult, validEntries):
+    INFOBOX_LENGTH = 98
+    name = topicResult["property"]["/type/object/name"]["values"][0]["value"] #get name of topic
+    mappedEntries = map_Entries(validEntries)
+    #print mappedEntries
+
+    #prints top row containing title 
+    print_dashed_line(INFOBOX_LENGTH) 
+    title = name.title() + "(" 
+    for entry in mappedEntries:
+        title += entry + ","
+    title = title[:-1] + ")"
+    print "|" + string.center(title,INFOBOX_LENGTH-1) + "|"
+    print_dashed_line(INFOBOX_LENGTH)
+
+    nameText = " Name:" + '\t\t\t'
+    nameValue = name
+    print "|" + nameText + string.ljust(nameValue,INFOBOX_LENGTH-len(nameText.expandtabs())) + "|"
+    print_dashed_line(INFOBOX_LENGTH)
+
+    if "/people/person" in validEntries:
+        bdayText = " Birthday:" + '\t\t' 
+        bdayValue = topicResult["property"]["/people/person/date_of_birth"]["values"][0]["value"]
+        print "|" + bdayText + string.ljust(bdayValue,INFOBOX_LENGTH-len(bdayText.expandtabs())) + "|"
+        print_dashed_line(INFOBOX_LENGTH)
+        bplaceText = " Place of Birth:" + '\t'
+        bplaceValue = topicResult["property"]["/people/person/place_of_birth"]["values"][0]["text"]
+        print "|" + bplaceText + string.ljust(bplaceValue,INFOBOX_LENGTH-len(bplaceText.expandtabs())) + "|"
+        print_dashed_line(INFOBOX_LENGTH)
+
+def print_dashed_line(lineLength):
+    for x in range(0,lineLength):
+        if x == 0:
+            stdout.write(" ")
+        else:
+            stdout.write("-")
+    print ''
+
+def map_Entries(validEntries):
+    entrySet = set()
+    for e in validEntries:
+        if e == "/book/author":
+            entrySet.add("AUTHOR")
+        elif e == "/film/actor":
+            entrySet.add("ACTOR")
+        elif e == "/tv/tv_actor":
+            entrySet.add("ACTOR")
+        elif e == "/organization/organization_founder":
+            entrySet.add("BUSINESS")
+        elif e == "/business/board_member":
+            entrySet.add("BUSINESS")
+        elif e == "/sports/sports_league":
+            entrySet.add("LEAGUE")
+        elif e == "/sports/sports_team":
+            entrySet.add("SPORTSTEAM")
+        elif e == "/sports/professional_sports_team":
+            entrySet.add("SPORTSTEAM")
+    return list(entrySet)
 
 def answer_query(query, key):                                   #Main code to answer a question
     def print_sentence(entity_list, sentence, length):          #Helper function to print out entities in sentence format
