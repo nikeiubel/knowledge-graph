@@ -1,5 +1,4 @@
 import json, sys, string, urllib, urllib2, re, collections
-from copy import deepcopy
 from sys import stdout
 
 #Freebase API key = AIzaSyCnxmwlxKWsLnzs9d98rcwDhh68kuwHVXs
@@ -90,9 +89,69 @@ def output_infobox (topicResult, validEntries):
         bdayValue = topicResult["property"]["/people/person/date_of_birth"]["values"][0]["value"]
         print "|" + bdayText + string.ljust(bdayValue,INFOBOX_LENGTH-len(bdayText.expandtabs())) + "|"
         print_dashed_line(INFOBOX_LENGTH)
+
         bplaceText = " Place of Birth:" + '\t'
         bplaceValue = topicResult["property"]["/people/person/place_of_birth"]["values"][0]["text"]
         print "|" + bplaceText + string.ljust(bplaceValue,INFOBOX_LENGTH-len(bplaceText.expandtabs())) + "|"
+        print_dashed_line(INFOBOX_LENGTH)
+
+        descriptText = " Description:" + '\t\t'
+        descriptValue = topicResult["property"]["/common/topic/description"]["values"][0]["value"]
+        descriptValue = descriptValue.replace('\n',' ')
+        step = INFOBOX_LENGTH-len(descriptText.expandtabs())
+        descriptValue_pieces = [descriptValue[i:i+step] for i in range(0, len(descriptValue), step)]
+        count = 0
+        for d in descriptValue_pieces:
+            if count == 0:
+                print "|" + descriptText + string.ljust(d,step) + "|"
+            else: 
+                print "|" + '\t\t\t' + string.ljust(d,step) + "|"
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+        siblingsText = " Siblings:" + '\t\t'
+        siblingsValue = topicResult["property"]["/people/person/sibling_s"]["values"]
+        siblingsValue_pieces = []
+        step = INFOBOX_LENGTH-len(siblingsText.expandtabs())
+        for d in siblingsValue:
+            siblingsValue_pieces.append(d["property"]["/people/sibling_relationship/sibling"]["values"][0]["text"])
+        count = 0
+        for d in siblingsValue_pieces:
+            if count == 0:
+                print "|" + siblingsText + string.ljust(d,step) + "|"
+            else: 
+                print "|" + '\t\t\t' + string.ljust(d,step) + "|"
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+        spousesText = " Spouses:" + '\t\t'
+        spousesValue = topicResult["property"]["/people/person/spouse_s"]["values"]
+        spousesValue_spouses = []
+        spousesValue_froms = []
+        spousesValue_tos = []
+        spousesValue_locations = []
+        step = INFOBOX_LENGTH-len(spousesText.expandtabs())
+        for d in spousesValue:
+            if len(d["property"]["/people/marriage/spouse"]["values"]) > 0:
+                spousesValue_spouses.append(d["property"]["/people/marriage/spouse"]["values"][0]["text"])
+            else:
+                break
+            if len(d["property"]["/people/marriage/from"]["values"]):
+                spousesValue_froms.append(d["property"]["/people/marriage/from"]["values"][0]["text"])
+            if len(d["property"]["/people/marriage/to"]["values"]) > 0:
+                spousesValue_tos.append(d["property"]["/people/marriage/to"]["values"][0]["text"])
+            else:
+                spousesValue_tos.append("now")
+            if len(d["property"]["/people/marriage/location_of_ceremony"]["values"]) > 0:
+                spousesValue_locations.append(d["property"]["/people/marriage/location_of_ceremony"]["values"][0]["text"])
+        count = 0
+        for d in spousesValue_spouses:
+            spouseFinalValue = d + " (" + spousesValue_froms[count] + " - " + spousesValue_tos[count] + ") @ " + spousesValue_locations[count]
+            if count == 0:
+                print "|" + spousesText + string.ljust(spouseFinalValue,step) + "|"
+            else: 
+                print "|" + '\t\t\t' + string.ljust(spouseFinalValue,step) + "|"
+            count += 1
         print_dashed_line(INFOBOX_LENGTH)
 
 def print_dashed_line(lineLength):
