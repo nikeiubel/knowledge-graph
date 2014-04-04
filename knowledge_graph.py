@@ -74,7 +74,8 @@ def output_infobox (topicResult, validEntries):
     print_dashed_line(INFOBOX_LENGTH) 
     title = name.title() + "(" 
     for entry in mappedEntries:
-        title += entry + ","
+        if entry != "PERSON":
+            title += entry + ","
     title = title[:-1] + ")"
     print "|" + string.center(title,INFOBOX_LENGTH-1) + "|"
     print_dashed_line(INFOBOX_LENGTH)
@@ -84,7 +85,7 @@ def output_infobox (topicResult, validEntries):
     print "|" + nameText + string.ljust(nameValue,INFOBOX_LENGTH-len(nameText.expandtabs())) + "|"
     print_dashed_line(INFOBOX_LENGTH)
 
-    if "/people/person" in validEntries:
+    if "PERSON" in mappedEntries:
         bdayText = " Birthday:" + '\t\t' 
         bdayValue = topicResult["property"]["/people/person/date_of_birth"]["values"][0]["value"]
         print "|" + bdayText + string.ljust(bdayValue,INFOBOX_LENGTH-len(bdayText.expandtabs())) + "|"
@@ -154,6 +155,68 @@ def output_infobox (topicResult, validEntries):
             count += 1
         print_dashed_line(INFOBOX_LENGTH)
 
+    if "AUTHOR" in mappedEntries:
+        bookText = " Books:" + '\t\t'
+        bookValue = topicResult["property"]["/book/author/works_written"]["values"]
+        step = INFOBOX_LENGTH-len(bookText.expandtabs())
+        bookValue_pieces = []
+        for b in bookValue:
+            bookValue_pieces.append(b["text"])
+        count = 0
+        for b in bookValue_pieces:
+            if count == 0:
+                print "|" + bookText + string.ljust(b,step)[:step] + "|"
+            else:
+                print "|" + '\t\t\t' + string.ljust(b,step)[:step] + "|"
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+        aboutText = " Books about:" + '\t\t'
+        aboutValue = topicResult["property"]["/book/book_subject/works"]["values"]
+        step = INFOBOX_LENGTH-len(aboutText.expandtabs())
+        aboutValue_pieces = []
+        for a in aboutValue:
+            aboutValue_pieces.append(a["text"])
+        count = 0
+        for a in aboutValue_pieces:
+            if count == 0:
+                print "|" + aboutText + string.ljust(a,step)[:step] + "|"
+            else:
+                print "|" + '\t\t\t' + string.ljust(a,step)[:step] + "|"
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+        influenceText = " Influenced:" + '\t\t'
+        influenceValue = topicResult["property"]["/influence/influence_node/influenced"]["values"]
+        step = INFOBOX_LENGTH-len(influenceText.expandtabs())
+        influenceValue_pieces = []
+        for i in influenceValue:
+            influenceValue_pieces.append(i["text"])
+        count = 0
+        for i in influenceValue_pieces:
+            if count == 0:
+                print "|" + influenceText + string.ljust(i,step)[:step] + "|"
+            else:
+                print "|" + '\t\t\t' + string.ljust(i,step)[:step] + "|"
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+    if "BUSINESS" in mappedEntries:
+        foundedText = " Founded:" + '\t\t'
+        foundedValue = topicResult["property"]["/organization/organization_founder/organizations_founded"]["values"]
+        step = INFOBOX_LENGTH-len(foundedText.expandtabs())
+        foundedValue_pieces = []
+        for f in foundedValue:
+            foundedValue_pieces.append(f["text"])
+        count = 0
+        for f in foundedValue_pieces:
+            if count == 0:
+                print "|" + foundedText + string.ljust(f,step)[:step] + "|"
+            else:
+                print "|" + '\t\t\t' + string.ljust(f,step)[:step] + "|"
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
 def print_dashed_line(lineLength):
     for x in range(0,lineLength):
         if x == 0:
@@ -165,7 +228,9 @@ def print_dashed_line(lineLength):
 def map_Entries(validEntries):
     entrySet = set()
     for e in validEntries:
-        if e == "/book/author":
+        if e == "/people/person":
+            entrySet.add("PERSON")
+        elif e == "/book/author":
             entrySet.add("AUTHOR")
         elif e == "/film/actor":
             entrySet.add("ACTOR")
