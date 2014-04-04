@@ -5,9 +5,24 @@ import json, sys, string, urllib, urllib2, re, collections
 
 def main(key, option, query, response):
     if option == '-q':
-        return query_freebase_search(query,key)
+        if response == 'infobox':
+            query_freebase_search(query,key)
+        elif response == 'question':
+            answer_query(query,key)
+        else:
+            usage()
     elif option == '-f':
-        pass
+        f = open(query, 'r')
+        if response == 'infobox':
+            for line in f:
+                print "\n" + line
+                query_freebase_search(line,key)
+        elif response == 'question':
+            for line in f:
+                print "\n" + line
+                answer_query(line,key)
+        else:
+            usage()
 
 def query_freebase_search(query, key):
     q = {'query':query, 'key':key}
