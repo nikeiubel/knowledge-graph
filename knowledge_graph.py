@@ -135,7 +135,7 @@ def answer_query(query, key):                                   #Main code to an
         else:                                                   #If more than two entities, returns in form 'X, Y, ... and Z'
             sentence += str(entity_list[0]) + ', '
             return print_sentence(entity_list[1:], sentence, length - 1)
-    valid_query = is_valid(query)                               #Calls is_valid to see if query is in valid format
+    valid_query = is_valid(query.lower())                               #Calls is_valid to see if query is in valid format
     if valid_query:
         url = 'https://www.googleapis.com/freebase/v1/mqlread?' 
         book_query = '[{ "works_written": [{ "name": null, "name~=": "' + urllib.quote(valid_query) + '" }], "name": null, "type": "/book/author" }]'
@@ -153,7 +153,7 @@ def answer_query(query, key):                                   #Main code to an
         print "Wrong question!!!"       #Returns error if question is in wrong format
 
 def is_valid(query):                    #Checks if question is in 'Who created X?' format
-    matchObj = re.match("Who created (.*).* ?", query[:-1])
+    matchObj = re.match("who created (.*).* ?", query[:-1])
     if matchObj:
         return matchObj.group(1)        
     else:
