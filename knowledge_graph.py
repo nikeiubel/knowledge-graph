@@ -2,7 +2,6 @@ import json, sys, string, urllib, urllib2, re, collections
 from sys import stdout
 
 #Freebase API key = AIzaSyCnxmwlxKWsLnzs9d98rcwDhh68kuwHVXs
-#Example usage: https://www.googleapis.com/freebase/v1/search?query=bob&key=AIzaSyCnxmwlxKWsLnzs9d98rcwDhh68kuwHVXs
 
 def main(key, option, query, response):
     if option == '-q':                          #Checks if there is a single query
@@ -306,8 +305,6 @@ def usage():
         python knowledge_graph.py -key <Freebase API key> -q <query> -t <infobox|question>
                 OR
         python knowledge_graph.py -key <Freebase API key> -f <file of queries> -t <infobox|question>
-                OR
-        python knowledge_graph.py -key <Freebase API key>
 
         Evalute the accuracy of a output trees compared to a key file.\n""")
 
