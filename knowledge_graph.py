@@ -27,30 +27,37 @@ def main(key, option, query, response):
 def query_freebase_search(query, key):
     q = {'query':query, 'key':key}
     url = 'https://www.googleapis.com/freebase/v1/search?' + urllib.urlencode(q)
-    req = urllib2.Request(url)   # why do we need this? not used in API sample code
+    req = urllib2.Request(url)   
     content = json.loads(urllib2.urlopen(req).read())
     global entries
     global validEntries
     entries = []
     validEntries = []
     topicResult = dict()
+    count = 0
     for obj in content["result"]:
         topicResult = query_freebase_topic(key, obj["mid"])
-        if (topicResult):
-        #if (query_freebase_topic(key, obj["mid"])):   # will stop at the top-level mid containing valid entry
-            break    
-    #print validEntries
-    output_infobox(topicResult, validEntries)
+        if (topicResult): # will stop at the top-level mid containing valid entry
+            infobox = output_infobox(topicResult, validEntries)
+            if (infobox):
+                return
+            else: 
+                count += 1
+        else:
+            count += 1
+        if count%5 == 0:
+            print str(count) + " Search API result entries were considered. None of them of a supported type."
+        if count > len(content["result"]):
+            return
 
 def query_freebase_topic(key, mid):
     url = 'https://www.googleapis.com/freebase/v1/topic'
     params = {
         'key': key,
-       # 'filter': 'suggest'
     }
     url += mid + '?' + urllib.urlencode(params)
-    topic = json.loads(urllib.urlopen(url).read())
-    #print urllib.urlopen(url).read()
+    req = urllib2.Request(url)
+    topic = json.loads(urllib2.urlopen(req).read())
     for entry in topic["property"]["/type/object/type"]["values"]:
         entries.append(str(entry["id"]))
     validEntities = {"/people/person","/book/author","/film/actor","/tv/tv_actor","/organization/organization_founder","/business/board_member","/sports/sports_league","/sports/sports_team","/sports/professional_sports_team"}
@@ -67,114 +74,141 @@ def output_infobox (topicResult, validEntries):
     INFOBOX_LENGTH = 98
     name = topicResult["property"]["/type/object/name"]["values"][0]["value"] #get name of topic
     mappedEntries = map_Entries(validEntries)
-    #print mappedEntries
 
-    #prints top row containing title 
-    print_dashed_line(INFOBOX_LENGTH) 
-    title = name.title() + "(" 
-    for entry in mappedEntries:
-        if entry != "PERSON":
-            title += entry + ","
-    title = title[:-1] + ")"
-    print "|" + string.center(title,INFOBOX_LENGTH-1) + "|"
-    print_dashed_line(INFOBOX_LENGTH)
+    if "PERSON" in mappedEntries or "LEAGUE" in mappedEntries or "SPORTS TEAM" in mappedEntries:
 
-    nameText = " Name:" + '\t\t\t'
-    nameValue = name
-    print "|" + nameText + string.ljust(nameValue,INFOBOX_LENGTH-len(nameText.expandtabs())) + "|"
-    print_dashed_line(INFOBOX_LENGTH)
+        #prints top row containing title 
+        print_dashed_line(INFOBOX_LENGTH) 
+        title = name.title() + "(" 
+        for entry in mappedEntries:
+            if entry != "PERSON":
+                title += entry + ","
+        title = title[:-1] + ")"
+        print "|" + string.center(title,INFOBOX_LENGTH-1) + "|"
+        print_dashed_line(INFOBOX_LENGTH)
 
-    if "PERSON" in mappedEntries:
-        print_list(" Birthday:" + '\t\t', "/people/person/date_of_birth", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_list(" Place of Birth:" + '\t', "/people/person/place_of_birth", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_description(topicResult, validEntries, INFOBOX_LENGTH)
-        #print_siblings(topicResult, validEntries, INFOBOX_LENGTH)
-        print_twoLevelsDown(" Siblings:" + '\t\t', "/people/person/sibling_s", "/people/sibling_relationship/sibling", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_spouses(topicResult, validEntries, INFOBOX_LENGTH)
+        nameText = " Name:" + '\t\t\t'
+        nameValue = name
+        print "|" + nameText + string.ljust(nameValue,INFOBOX_LENGTH-len(nameText.expandtabs())) + "|"
+        print_dashed_line(INFOBOX_LENGTH)
 
-    if "AUTHOR" in mappedEntries:
-        print_list(" Books:" + '\t\t', "/book/author/works_written", topicResult, validEntries, INFOBOX_LENGTH, True)
-        print_list(" Books about:" + '\t\t', "/book/book_subject/works", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_list(" Influenced:" + '\t\t', "/influence/influence_node/influenced", topicResult, validEntries, INFOBOX_LENGTH, False)
+        if "PERSON" in mappedEntries:
+            bdayTag = "/people/person/spouse_s"
+            if "/people/person/date_of_birth" in topicResult["property"]:
+                print_list(" Birthday:" + '\t\t', "/people/person/date_of_birth", topicResult, validEntries, INFOBOX_LENGTH, False)
+            if "/people/person/place_of_birth" in topicResult["property"]:
+                print_list(" Place of Birth:" + '\t', "/people/person/place_of_birth", topicResult, validEntries, INFOBOX_LENGTH, False)
+            if "/people/deceased_person/date_of_death" in topicResult["property"]:
+                print_death(topicResult, validEntries, INFOBOX_LENGTH)
+            if "/common/topic/description" in topicResult["property"]:
+                print_description(topicResult, validEntries, INFOBOX_LENGTH)
+            if "/people/person/sibling_s" in topicResult["property"]:
+                print_twoLevelsDown(" Siblings:" + '\t\t', "/people/person/sibling_s", "/people/sibling_relationship/sibling", topicResult, validEntries, INFOBOX_LENGTH, False)
+            if "/people/person/spouse_s" in topicResult["property"]:
+                print_spouses(topicResult, validEntries, INFOBOX_LENGTH)
 
-    if "BUSINESS" in mappedEntries:
-        print_list(" Founded:" + '\t\t', "/organization/organization_founder/organizations_founded", topicResult, validEntries, INFOBOX_LENGTH, False)
+            if "ACTOR" in mappedEntries:
+                if "/film/actor/film" in topicResult["property"]:
+                    print_films(topicResult, validEntries, INFOBOX_LENGTH)
+
+            if "AUTHOR" in mappedEntries:
+                if "/book/author/works_written" in topicResult["property"]:
+                    print_list(" Books:" + '\t\t', "/book/author/works_written", topicResult, validEntries, INFOBOX_LENGTH, True)
+                if "/influence/influence_node/influenced_by" in topicResult["property"]:
+                    print_list(" Influenced By:" + '\t', "/influence/influence_node/influenced_by", topicResult, validEntries, INFOBOX_LENGTH, True)
+                if "/book/book_subject/works" in topicResult["property"]:
+                    print_list(" Books about:" + '\t\t', "/book/book_subject/works", topicResult, validEntries, INFOBOX_LENGTH, False)
+                if "/influence/influence_node/influenced" in topicResult["property"]:
+                    print_list(" Influenced:" + '\t\t', "/influence/influence_node/influenced", topicResult, validEntries, INFOBOX_LENGTH, False)
+    
+            if "BUSINESS" in mappedEntries:
+                if "/organization/organization_founder/organizations_founded" in topicResult["property"]:
+                    print_list(" Founded:" + '\t\t', "/organization/organization_founder/organizations_founded", topicResult, validEntries, INFOBOX_LENGTH, False)
         
-        subTexts = []
-        subTexts.append("Organization") 
-        subTexts.append("Role") 
-        subTexts.append("Title") 
-        subTexts.append("From-To")
+                if "/business/board_member/leader_of" in topicResult["property"]:
+                    subTexts = []
+                    subTexts.append("Organization") 
+                    subTexts.append("Role") 
+                    subTexts.append("Title") 
+                    subTexts.append("From-To")
 
-        tagsLeader = []
-        tagsLeader.append("/business/board_member/leader_of")
-        tagsLeader.append("/organization/leadership/organization")
-        tagsLeader.append("/organization/leadership/role")
-        tagsLeader.append("/organization/leadership/title")
-        tagsLeader.append("/organization/leadership/from")
-        tagsLeader.append("/organization/leadership/to")
-        print_bizList(" Leadership:", tagsLeader, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 4)
+                    tagsLeader = []
+                    tagsLeader.append("/business/board_member/leader_of")
+                    tagsLeader.append("/organization/leadership/organization")
+                    tagsLeader.append("/organization/leadership/role")
+                    tagsLeader.append("/organization/leadership/title")
+                    tagsLeader.append("/organization/leadership/from")
+                    tagsLeader.append("/organization/leadership/to")
+                    print_bizList(" Leadership:", tagsLeader, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 4)
 
-        tagsBoard = []
-        tagsBoard.append("/business/board_member/organization_board_memberships")
-        tagsBoard.append("/organization/organization_board_membership/organization")
-        tagsBoard.append("/organization/organization_board_membership/role")
-        tagsBoard.append("/organization/organization_board_membership/title")
-        tagsBoard.append("/organization/organization_board_membership/from")
-        tagsBoard.append("/organization/organization_board_membership/to")
-        print_bizList(" Board Member:", tagsBoard, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 2)
+                if "/business/board_member/organization_board_memberships" in topicResult["property"]:
+                    tagsBoard = []
+                    tagsBoard.append("/business/board_member/organization_board_memberships")
+                    tagsBoard.append("/organization/organization_board_membership/organization")
+                    tagsBoard.append("/organization/organization_board_membership/role")
+                    tagsBoard.append("/organization/organization_board_membership/title")
+                    tagsBoard.append("/organization/organization_board_membership/from")
+                    tagsBoard.append("/organization/organization_board_membership/to")
+                    print_bizList(" Board Member:", tagsBoard, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 2)
 
-    if "ACTOR" in mappedEntries:
-        print_films(topicResult, validEntries, INFOBOX_LENGTH)
+        if "LEAGUE" in mappedEntries:
+            if "/sports/sports_league/sport" in topicResult["property"]:
+                print_list(" Sport:" + '\t\t', "/sports/sports_league/sport", topicResult, validEntries, INFOBOX_LENGTH, True)
+            if "/organization/organization/slogan" in topicResult["property"]:
+                print_list(" Slogan:" + '\t\t', "/organization/organization/slogan", topicResult, validEntries, INFOBOX_LENGTH, False)
+            if "/common/topic/official_website" in topicResult["property"]:
+                print_list(" Official Website:" + '\t',  "/common/topic/official_website", topicResult, validEntries, INFOBOX_LENGTH, False)
+            if "/sports/sports_league/championship" in topicResult["property"]:
+                print_list(" Championship:" + '\t\t', "/sports/sports_league/championship", topicResult, validEntries, INFOBOX_LENGTH, False)
+            if "/sports/sports_league/teams" in topicResult["property"]:
+                print_teams(topicResult, validEntries, INFOBOX_LENGTH)
+            if "/common/topic/description" in topicResult["property"]:
+                print_description(topicResult, validEntries, INFOBOX_LENGTH)
 
-    if "LEAGUE" in mappedEntries:
-        print_list(" Sport:" + '\t\t', "/sports/sports_league/sport", topicResult, validEntries, INFOBOX_LENGTH, True)
-        print_list(" Slogan:" + '\t\t', "/organization/organization/slogan", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_list(" Official Website:" + '\t',  "/common/topic/official_website", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_list(" Championship:" + '\t\t', "/sports/sports_league/championship", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_teams(topicResult, validEntries, INFOBOX_LENGTH)
-        print_description(topicResult, validEntries, INFOBOX_LENGTH)
+        if "SPORTS TEAM" in mappedEntries:
+            print_list(" Sport:" + '\t\t', "/sports/sports_team/sport", topicResult, validEntries, INFOBOX_LENGTH, True)
+            print_twoLevelsDown(" Arena:" + '\t\t', "/sports/sports_team/venue", "/sports/team_venue_relationship/venue", topicResult, validEntries, INFOBOX_LENGTH, True)
+            print_list(" Championships:" + '\t', "/sports/sports_team/championships", topicResult, validEntries, INFOBOX_LENGTH, True)
+            print_list(" Founded:" + '\t\t', "/sports/sports_team/founded", topicResult, validEntries, INFOBOX_LENGTH, False)
+            print_twoLevelsDown(" Leagues:" + '\t\t', "/sports/sports_team/league", "/sports/sports_league_participation/league", topicResult, validEntries, INFOBOX_LENGTH, False)
+            print_list(" Locations:" + '\t\t', "/sports/sports_team/location", topicResult, validEntries, INFOBOX_LENGTH, False)
+        
+            subTexts = []
+            subTexts.append("Name") 
+            subTexts.append("Position")  
+            subTexts.append("From-To")
+            subTexts.append(" ")
 
-    if "SPORTS TEAM" in mappedEntries:
-        print_list(" Sport:" + '\t\t', "/sports/sports_team/sport", topicResult, validEntries, INFOBOX_LENGTH, True)
-        print_twoLevelsDown(" Arena:" + '\t\t', "/sports/sports_team/venue", "/sports/team_venue_relationship/venue", topicResult, validEntries, INFOBOX_LENGTH, True)
-        print_list(" Championships:" + '\t', "/sports/sports_team/championships", topicResult, validEntries, INFOBOX_LENGTH, True)
-        print_list(" Founded:" + '\t\t', "/sports/sports_team/founded", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_twoLevelsDown(" Leagues:" + '\t\t', "/sports/sports_team/league", "/sports/sports_league_participation/league", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_list(" Locations:" + '\t\t', "/sports/sports_team/location", topicResult, validEntries, INFOBOX_LENGTH, False)
-        print_list(" Sport:" + '\t\t', "/sports/sports_team/sport", topicResult, validEntries, INFOBOX_LENGTH, True)
+            tagsCoach = []
+            tagsCoach.append("/sports/sports_team/coaches")
+            tagsCoach.append("/sports/sports_team_coach_tenure/coach")
+            tagsCoach.append("/sports/sports_team_coach_tenure/position")
+            tagsCoach.append("/sports/sports_team_coach_tenure/from")
+            tagsCoach.append("/sports/sports_team_coach_tenure/to")
+            tagsCoach.append(" ")
+            print_bizList(" Coaches:", tagsCoach, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 8)
 
-        subTexts = []
-        subTexts.append("Name") 
-        subTexts.append("Position")  
-        subTexts.append("From-To")
-        subTexts.append(" ")
+            subTexts = []
+            subTexts.append("Name") 
+            subTexts.append("Position") 
+            subTexts.append("Number") 
+            subTexts.append("From-To")
 
-        tagsCoach = []
-        tagsCoach.append("/sports/sports_team/coaches")
-        tagsCoach.append("/sports/sports_team_coach_tenure/coach")
-        tagsCoach.append("/sports/sports_team_coach_tenure/position")
-        tagsCoach.append("/sports/sports_team_coach_tenure/from")
-        tagsCoach.append("/sports/sports_team_coach_tenure/to")
-        tagsCoach.append(" ")
-        print_bizList(" Coaches:", tagsCoach, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 8)
+            tagsRoster = []
+            tagsRoster.append("/sports/sports_team/roster")
+            tagsRoster.append("/sports/sports_team_roster/player")
+            tagsRoster.append("/sports/sports_team_roster/position")
+            tagsRoster.append("/sports/sports_team_roster/number")
+            tagsRoster.append("/sports/sports_team_roster/from")
+            tagsRoster.append("/sports/sports_team_roster/to")
+            print_bizList(" Roster:", tagsRoster, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 8)
 
-        subTexts = []
-        subTexts.append("Name") 
-        subTexts.append("Position") 
-        subTexts.append("Number") 
-        subTexts.append("From-To")
+            print_description(topicResult, validEntries, INFOBOX_LENGTH)
 
-        tagsRoster = []
-        tagsRoster.append("/sports/sports_team/roster")
-        tagsRoster.append("/sports/sports_team_roster/player")
-        tagsRoster.append("/sports/sports_team_roster/position")
-        tagsRoster.append("/sports/sports_team_roster/number")
-        tagsRoster.append("/sports/sports_team_roster/from")
-        tagsRoster.append("/sports/sports_team_roster/to")
-        print_bizList(" Roster:", tagsRoster, subTexts, topicResult, validEntries, INFOBOX_LENGTH, 8)
+        return True
 
-        print_description(topicResult, validEntries, INFOBOX_LENGTH)
+    else:
+        return False
 
 def print_list(entity, tag, topicResult, validEntries, INFOBOX_LENGTH, tabFixOn):
     tab = '\t'
@@ -231,6 +265,16 @@ def print_twoLevelsDown(entity, maintag, subtag, topicResult, validEntries, INFO
         else: 
             print "|" + '\t\t\t' + string.ljust(d,step-len(tab.expandtabs())*i) + "|"
         count += 1
+    print_dashed_line(INFOBOX_LENGTH)
+
+def print_death(topicResult, validEntries, INFOBOX_LENGTH):  
+    tab = '\t'
+    text = " Death: " + '\t\t' 
+    value = topicResult["property"]["/people/deceased_person/date_of_death"]["values"][0]["text"] + " at " + topicResult["property"]["/people/deceased_person/place_of_death"]["values"][0]["text"] + ", cause: " 
+    for t in topicResult["property"]["/people/deceased_person/cause_of_death"]["values"]:
+        value += t["text"] + ", "
+    value = value[:-2] 
+    print "|" + text + string.ljust(value,INFOBOX_LENGTH-len(text.expandtabs())) + "|"
     print_dashed_line(INFOBOX_LENGTH)
 
 def print_spouses(topicResult, validEntries, INFOBOX_LENGTH):
@@ -296,21 +340,21 @@ def print_bizList(entity, tags, subTexts, topicResult, validEntries, INFOBOX_LEN
     value_dates = []
     value_dates.append(subText4)
     for v in value:
-        if subtag1 in v["property"]:
+        if subtag1 in v["property"] and len(v["property"][subtag1]["values"]) > 0:
             value_orgs.append(v["property"][subtag1]["values"][0]["text"])
         else:
             value_orgs.append(" ")
-        if subtag2 in v["property"]:
+        if subtag2 in v["property"] and len(v["property"][subtag2]["values"]) > 0:
             value_roles.append(v["property"][subtag2]["values"][0]["text"])
         else:
             value_roles.append(" ")
-        if subtag3 in v["property"]:
+        if subtag3 in v["property"] and len(v["property"][subtag3]["values"]) > 0:
             value_titles.append(v["property"][subtag3]["values"][0]["text"])
         else:
             value_titles.append(" ")
-        if subtag4 in v["property"]:
+        if subtag4 in v["property"] and len(v["property"][subtag4]["values"]) > 0:
             fromstr = v["property"][subtag4]["values"][0]["text"]
-            if subtag5 in v["property"]:
+            if subtag5 in v["property"] and len(v["property"][subtag5]["values"]) > 0:
                 tostr = v["property"][subtag5]["values"][0]["text"]
             else:
                 tostr = "now"
@@ -346,11 +390,15 @@ def print_films(topicResult, validEntries, INFOBOX_LENGTH):
                 filmValue_characters.append(f["property"]["/film/performance/character"]["values"][0]["text"])
             else:
                 filmValue_characters.append(" ")
+        else:
+            filmValue_characters.append(" ")
         if "/film/performance/film" in f["property"]:
             if len(f["property"]["/film/performance/film"]["values"]) > 0:
                 filmValue_films.append(f["property"]["/film/performance/film"]["values"][0]["text"])
             else:
                 filmValue_films.append(" ")
+        else:
+            filmValue_characters.append(" ")
     count = 0
     tab = '\t'
     for f in filmValue_characters:
