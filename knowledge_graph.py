@@ -132,21 +132,29 @@ def output_infobox (topicResult, validEntries):
         spousesValue_locations = []
         step = INFOBOX_LENGTH-len(spousesText.expandtabs())
         for d in spousesValue:
-            if len(d["property"]["/people/marriage/spouse"]["values"]) > 0:
-                spousesValue_spouses.append(d["property"]["/people/marriage/spouse"]["values"][0]["text"])
-            else:
-                break
-            if len(d["property"]["/people/marriage/from"]["values"]):
-                spousesValue_froms.append(d["property"]["/people/marriage/from"]["values"][0]["text"])
-            if len(d["property"]["/people/marriage/to"]["values"]) > 0:
-                spousesValue_tos.append(d["property"]["/people/marriage/to"]["values"][0]["text"])
-            else:
-                spousesValue_tos.append("now")
-            if len(d["property"]["/people/marriage/location_of_ceremony"]["values"]) > 0:
-                spousesValue_locations.append(d["property"]["/people/marriage/location_of_ceremony"]["values"][0]["text"])
+            if "/people/marriage/spouse" in d["property"]:
+                if len(d["property"]["/people/marriage/spouse"]["values"]) > 0:
+                    spousesValue_spouses.append(d["property"]["/people/marriage/spouse"]["values"][0]["text"])
+                else:
+                    break
+            if "/people/marriage/from" in d["property"]:
+                if len(d["property"]["/people/marriage/from"]["values"]) > 0:
+                    spousesValue_froms.append(d["property"]["/people/marriage/from"]["values"][0]["text"])
+                else:
+                    spousesValue_froms.append(" ")
+            if "/people/marriage/to" in d["property"]:
+                if len(d["property"]["/people/marriage/to"]["values"]) > 0:
+                    spousesValue_tos.append(d["property"]["/people/marriage/to"]["values"][0]["text"])
+                else:
+                    spousesValue_tos.append("now")
+            if "/people/marriage/location_of_ceremony" in d["property"]:
+                if len(d["property"]["/people/marriage/location_of_ceremony"]["values"]) > 0:
+                    spousesValue_locations.append("@ " + d["property"]["/people/marriage/location_of_ceremony"]["values"][0]["text"])
+                else:
+                    spousesValue_locations.append(" ")
         count = 0
         for d in spousesValue_spouses:
-            spouseFinalValue = d + " (" + spousesValue_froms[count] + " - " + spousesValue_tos[count] + ") @ " + spousesValue_locations[count]
+            spouseFinalValue = d + " (" + spousesValue_froms[count] + " - " + spousesValue_tos[count] + ") " + spousesValue_locations[count]
             if count == 0:
                 print "|" + spousesText + string.ljust(spouseFinalValue,step) + "|"
             else: 
@@ -161,12 +169,13 @@ def output_infobox (topicResult, validEntries):
         bookValue_pieces = []
         for b in bookValue:
             bookValue_pieces.append(b["text"])
+        tab = '\t'
         count = 0
         for b in bookValue_pieces:
             if count == 0:
-                print "|" + bookText + string.ljust(b,step)[:step] + "|"
+                print "|" + bookText + string.ljust(b,step-len(tab.expandtabs()))[:step] + "|"
             else:
-                print "|" + '\t\t\t' + string.ljust(b,step)[:step] + "|"
+                print "|" + '\t\t\t' + string.ljust(b,step-len(tab.expandtabs()))[:step] + "|"
             count += 1
         print_dashed_line(INFOBOX_LENGTH)
 
@@ -213,6 +222,149 @@ def output_infobox (topicResult, validEntries):
                 print "|" + foundedText + string.ljust(f,step)[:step] + "|"
             else:
                 print "|" + '\t\t\t' + string.ljust(f,step)[:step] + "|"
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+        leaderText = " Leadership:" #+ '\t\t' 
+        leaderSubText1 = "Organization" 
+        leaderSubText2 = "Role" 
+        leaderSubText3 = "Title" 
+        leaderSubText4 = "From-To"
+        step = INFOBOX_LENGTH-len(leaderText.expandtabs())
+        sublen = step/4-5
+        leaderValue = topicResult["property"]["/business/board_member/leader_of"]["values"]
+        leaderValue_orgs = []
+        leaderValue_orgs.append(leaderSubText1)
+        leaderValue_roles = []
+        leaderValue_roles.append(leaderSubText2)
+        leaderValue_titles = []
+        leaderValue_titles.append(leaderSubText3)
+        leaderValue_dates = []
+        leaderValue_dates.append(leaderSubText4)
+        for l in leaderValue:
+            if "/organization/leadership/organization" in l["property"]:
+                if len(l["property"]["/organization/leadership/organization"]["values"]) > 0:
+                    leaderValue_orgs.append(l["property"]["/organization/leadership/organization"]["values"][0]["text"])
+                else:
+                    leaderValue_orgs.append(" ")
+            if "/organization/leadership/role" in l["property"]:
+                if len(l["property"]["/organization/leadership/role"]["values"]) > 0:
+                    leaderValue_roles.append(l["property"]["/organization/leadership/role"]["values"][0]["text"])
+                else:
+                    leaderValue_roles.append(" ")
+            if "/organization/leadership/title" in l["property"]:
+                if len(l["property"]["/organization/leadership/title"]["values"]) > 0:
+                    leaderValue_titles.append(l["property"]["/organization/leadership/title"]["values"][0]["text"])
+                else:
+                    leaderValue_titles.append(" ")
+            if "/organization/leadership/from" in l["property"]:
+                if len(l["property"]["/organization/leadership/from"]["values"]) > 0:
+                    fromstr = l["property"]["/organization/leadership/from"]["values"][0]["text"]
+                    if "/organization/leadership/to" in l["property"]:
+                        if len(l["property"]["/organization/leadership/to"]["values"]) > 0:
+                            tostr = l["property"]["/organization/leadership/to"]["values"][0]["text"]
+                        else:
+                            tostr = " "
+                    else:
+                        tostr = "now"
+                    leaderValue_dates.append("(" + fromstr + " / " + tostr + ")") 
+                else:
+                    leaderValue_dates.append(" ")
+        count = 0
+        tab = '\t'
+        for l in leaderValue_orgs:
+            leaderFinalValue = "| " + string.ljust(l[:sublen],sublen)  + "| " + string.ljust(leaderValue_roles[count][:sublen], sublen)  + "| " + string.ljust(leaderValue_titles[count][:sublen], sublen)  + "| " + string.ljust(leaderValue_dates[count][:sublen], sublen)
+            if count == 0:
+                print "|" + leaderText + '\t\t' + string.ljust(leaderFinalValue,step-len(tab.expandtabs())-4) + "|" #+ string.rjust("|",step)
+                stdout.write ("|" + '\t\t\t')
+                print_dashed_line(step-len(tab.expandtabs())-4)
+            else:
+                print "|" + '\t\t\t' + string.ljust(leaderFinalValue,step-len(tab.expandtabs())-4) + "|" #+ string.rjust("|",step)
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+        boardText = " Board Member:" #+ '\t\t' 
+        boardSubText1 = "Organization" 
+        boardSubText2 = "Role" 
+        boardSubText3 = "Title" 
+        boardSubText4 = "From-To"
+        step = INFOBOX_LENGTH-len(boardText.expandtabs())
+        sublen = step/4-5
+        boardValue = topicResult["property"]["/business/board_member/organization_board_memberships"]["values"]
+        boardValue_orgs = []
+        boardValue_orgs.append(boardSubText1)
+        boardValue_roles = []
+        boardValue_roles.append(boardSubText2)
+        boardValue_titles = []
+        boardValue_titles.append(boardSubText3)
+        boardValue_dates = []
+        boardValue_dates.append(boardSubText4)
+        for b in boardValue:
+            if "/organization/organization_board_membership/organization" in b["property"]:
+                boardValue_orgs.append(b["property"]["/organization/organization_board_membership/organization"]["values"][0]["text"])
+            else:
+                boardValue_orgs.append(" ")
+            if "/organization/organization_board_membership/role" in b["property"]:
+                boardValue_roles.append(b["property"]["/organization/organization_board_membership/role"]["values"][0]["text"])
+            else:
+                boardValue_roles.append(" ")
+            if "/organization/organization_board_membership/title" in b["property"]:
+                boardValue_titles.append(b["property"]["/organization/organization_board_membership/title"]["values"][0]["text"])
+            else:
+                boardValue_titles.append(" ")
+            if "/organization/organization_board_membership/from" in b["property"]:
+                fromstr = b["property"]["/organization/organization_board_membership/from"]["values"][0]["text"]
+                if "/organization/organization_board_membership/to" in b["property"]:
+                    tostr = b["property"]["/organization/organization_board_membership/to"]["values"][0]["text"]
+                else:
+                    tostr = "now"
+                boardValue_dates.append("(" + fromstr + " / " + tostr + ")") 
+            else:
+                boardValue_dates.append(" ")
+        count = 0
+        tab = '\t'
+        for l in boardValue_orgs:
+            boardFinalValue = "| " + string.ljust(l[:sublen],sublen)  + "| " + string.ljust(boardValue_roles[count][:sublen], sublen)  + "| " + string.ljust(boardValue_titles[count][:sublen], sublen)  + "| " + string.ljust(boardValue_dates[count][:sublen], sublen)
+            if count == 0:
+                print "|" + boardText + '\t\t' + string.ljust(boardFinalValue,step-len(tab.expandtabs())-2) + "|" #+ string.rjust("|",step)
+                stdout.write ("|" + '\t\t\t')
+                print_dashed_line(step-len(tab.expandtabs())-2)
+            else:
+                print "|" + '\t\t\t' + string.ljust(boardFinalValue,step-len(tab.expandtabs())-2) + "|" #+ string.rjust("|",step)
+            count += 1
+        print_dashed_line(INFOBOX_LENGTH)
+
+    if "ACTOR" in mappedEntries:
+        filmText = " Films:" + '\t\t'
+        filmSubText1 = "Character" 
+        filmSubText2 = "Film Name"
+        step = INFOBOX_LENGTH-len(filmText.expandtabs())
+        filmValue = topicResult["property"]["/film/actor/film"]["values"]
+        filmValue_characters = []
+        filmValue_characters.append(filmSubText1)
+        filmValue_films = []
+        filmValue_films.append(filmSubText2)
+        for f in filmValue:
+            if "/film/performance/character" in f["property"]:
+                if len(f["property"]["/film/performance/character"]["values"]) > 0:
+                    filmValue_characters.append(f["property"]["/film/performance/character"]["values"][0]["text"])
+                else:
+                    filmValue_characters.append(" ")
+            if "/film/performance/film" in f["property"]:
+                if len(f["property"]["/film/performance/film"]["values"]) > 0:
+                    filmValue_films.append(f["property"]["/film/performance/film"]["values"][0]["text"])
+                else:
+                    filmValue_films.append(" ")
+        count = 0
+        tab = '\t'
+        for f in filmValue_characters:
+            filmFinalValue = "| " + string.ljust(f,step/3)  + "| " + filmValue_films[count] 
+            if count == 0:
+                print "| Films:" + '\t\t' + string.ljust(filmFinalValue,step-len(tab.expandtabs())) + "|"
+                stdout.write ("|" + '\t\t\t')
+                print_dashed_line(step-len(tab.expandtabs()))
+            else:
+                print "|" + '\t\t\t' + string.ljust(filmFinalValue,step-len(tab.expandtabs())) + "|"
             count += 1
         print_dashed_line(INFOBOX_LENGTH)
 
