@@ -15,7 +15,7 @@ def main(key, option, query, response):
         f = open(query, 'r')                    #Opens the file
         if response == 'infobox':
             for line in f:                      #Runs appropriate program for each line of file
-                print "\n" + line
+                print "Query-Question: " + line + "\n"
                 query_freebase_search(line,key)
         elif response == 'question':
             for line in f:
