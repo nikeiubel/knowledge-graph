@@ -39,8 +39,8 @@ def query_freebase_search(query, key):
         topicResult = query_freebase_topic(key, obj["mid"])
         if (topicResult): # will stop at the top-level mid containing valid entry
             infobox = output_infobox(topicResult, validEntries)
-            if (infobox):
-                return
+            if (infobox): 
+                return  #quit searching API because relevant results has been found and printed out
             else: 
                 count += 1
         else:
@@ -70,6 +70,7 @@ def query_freebase_topic(key, mid):
         del entries[:]
         return {}
 
+# prints out infobox
 def output_infobox (topicResult, validEntries):
     INFOBOX_LENGTH = 98
     name = topicResult["property"]["/type/object/name"]["values"][0]["value"] #get name of topic
@@ -210,6 +211,7 @@ def output_infobox (topicResult, validEntries):
     else:
         return False
 
+# generic function to print values of entries (either a simple box or a list)
 def print_list(entity, tag, topicResult, validEntries, INFOBOX_LENGTH, tabFixOn):
     tab = '\t'
     if tabFixOn == True:
@@ -231,6 +233,7 @@ def print_list(entity, tag, topicResult, validEntries, INFOBOX_LENGTH, tabFixOn)
         count += 1
     print_dashed_line(INFOBOX_LENGTH)
 
+# specific function to print values of Teams (SPORTS)
 def print_description(topicResult, validEntries, INFOBOX_LENGTH):
     descriptText = " Description:" + '\t\t'
     descriptValue = topicResult["property"]["/common/topic/description"]["values"][0]["value"]
@@ -246,6 +249,7 @@ def print_description(topicResult, validEntries, INFOBOX_LENGTH):
         count += 1
     print_dashed_line(INFOBOX_LENGTH)
 
+# specific function to print values hidden in subtags (two levels down)
 def print_twoLevelsDown(entity, maintag, subtag, topicResult, validEntries, INFOBOX_LENGTH, tabFixOn):
     if tabFixOn:
         i = 1
@@ -267,6 +271,7 @@ def print_twoLevelsDown(entity, maintag, subtag, topicResult, validEntries, INFO
         count += 1
     print_dashed_line(INFOBOX_LENGTH)
 
+# specific function to print values of Death (PERSON)
 def print_death(topicResult, validEntries, INFOBOX_LENGTH):  
     tab = '\t'
     text = " Death: " + '\t\t' 
@@ -277,6 +282,7 @@ def print_death(topicResult, validEntries, INFOBOX_LENGTH):
     print "|" + text + string.ljust(value,INFOBOX_LENGTH-len(text.expandtabs())) + "|"
     print_dashed_line(INFOBOX_LENGTH)
 
+# specific function to print values of Spouses (PERSON)
 def print_spouses(topicResult, validEntries, INFOBOX_LENGTH):
     spousesText = " Spouses:" + '\t\t'
     spousesValue = topicResult["property"]["/people/person/spouse_s"]["values"]
@@ -316,6 +322,7 @@ def print_spouses(topicResult, validEntries, INFOBOX_LENGTH):
         count += 1
     print_dashed_line(INFOBOX_LENGTH)
 
+# generic function that prints out lists with multiple values, such as Leadership and Board Member
 def print_bizList(entity, tags, subTexts, topicResult, validEntries, INFOBOX_LENGTH, pad):
     text = entity
     subText1 = subTexts[0]
@@ -374,6 +381,7 @@ def print_bizList(entity, tags, subTexts, topicResult, validEntries, INFOBOX_LEN
         count += 1
     print_dashed_line(INFOBOX_LENGTH)
 
+# specific function to print values of Films (ACTORS)
 def print_films(topicResult, validEntries, INFOBOX_LENGTH):
     filmText = " Films:" + '\t\t'
     filmSubText1 = "Character" 
@@ -412,6 +420,7 @@ def print_films(topicResult, validEntries, INFOBOX_LENGTH):
         count += 1
     print_dashed_line(INFOBOX_LENGTH)
 
+# specific function to print values of Teams (SPORTS)
 def print_teams(topicResult, validEntries, INFOBOX_LENGTH):
     tab = '\t'
     teamsText = " Teams:" + '\t\t'
@@ -433,6 +442,7 @@ def print_teams(topicResult, validEntries, INFOBOX_LENGTH):
         count += 1
     print_dashed_line(INFOBOX_LENGTH)
 
+# prints dashed line between rows
 def print_dashed_line(lineLength):
     for x in range(0,lineLength):
         if x == 0:
@@ -441,6 +451,7 @@ def print_dashed_line(lineLength):
             stdout.write("-")
     print ''
 
+# maps Freebase tags to strings describing valid entries
 def map_Entries(validEntries):
     entrySet = set()
     for e in validEntries:
